@@ -84,7 +84,8 @@
                     
                     <h3>Campos referencia</h3>
                     <group>
-                        <field name='ala_1' attrs="{'invisible': [('is_cantonera', '=', False),('is_perfilu', '=', False),('is_slipsheet', '=', False),]}"/>
+                        <field name='pie'  attrs="{'invisible': [('is_pieballet', '=', False)]}"/>
+			<field name='ala_1' attrs="{'invisible': [('is_cantonera', '=', False),('is_perfilu', '=', False),('is_slipsheet', '=', False),]}"/>
                         <field name='ancho' attrs="{'invisible': ['|',('is_cantonera', '=', True),('is_pieballet', '=', True),]}"/>
                         <field name='ala_2' attrs="{'invisible': [('is_cantonera', '=', False),('is_perfilu', '=', False),('is_slipsheet', '=', False),]}"/>
                         <field name='grosor_1' attrs="{'invisible': [('is_slipsheet', '=', False),('is_solidboard', '=', False),]}" />
