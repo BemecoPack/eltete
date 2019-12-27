@@ -4,14 +4,8 @@ from odoo import fields, models, api
 class ProductReferencia(models.Model):
     _name = 'product.referencia'
 
-    
-    name = fields.Char('Nombre', readonly=True)
-    
-    #Se calcuculan cuando texto_error == ""
-	####### - AÑADIR --> también al crear   -> titulo = fields.Char('Titulo', readonly = True, compute = getTitulo())
-	
     type_id = fields.Many2one('product.category', string="Tipo de producto", required=True)
-    
+  
     is_cantonera = fields.Boolean('¿Es Cantonera?', related='type_id.is_cantonera')
     is_perfilu = fields.Boolean('¿Es Perfil U?', related='type_id.is_perfilu')
     is_slipsheet = fields.Boolean('¿Es Slip Sheet?', related='type_id.is_slipsheet')
@@ -21,30 +15,20 @@ class ProductReferencia(models.Model):
     is_pieballet = fields.Boolean('¿Es Pie de Ballet?', related='type_id.is_pieballet')
     is_varios = fields.Boolean('¿Es Varios?', related='type_id.is_varios')
     
+    name = fields.Char('Nombre', readonly=True)
+    TIPO_PIE = [('1', 'Alto 100'), 
+               ('2', 'Alto 60'),
+               ]
+    pie = fields.Selection(selection = TIPO_PIE, string = 'Tipo Pie')
     ala_1 = fields.Integer('Ala 1')
     ancho = fields.Integer('Ancho')
     ala_2 = fields.Integer('Ala 2')
     grosor = fields.Float('Grosor')
-    longitud = fields.Integer('Longitud')
-    alas = fields.Integer('Alas')
-    interior = fields.Integer('Interior')
-    entrada_1 = fields.Char('Entrada 1')
-    entrada_2 = fields.Char('Entrada 2')
-    entrada_3 = fields.Char('Entrada 3')
-    entrada_4 = fields.Char('Entrada 4')
-    
     ala_3 = fields.Integer('Solapa 3')
-    ala_4 = fields.Integer('Solapa 4')
-    
+    longitud = fields.Integer('Longitud')
+    ala_4 = fields.Integer('Solapa 4') 
     diametro = fields.Integer('Diámetro')
     gramaje = fields.Integer('Gramaje')
-    
-    TIPO_PIE = [('1', 'Alto 100 con Adhesivo'), 
-               ('2', 'Alto 100 sin Adhesivo'),
-               ('3', 'Alto 60 con Adhesivo'),                 
-               ('4', 'Alto 60 sin Adhesivo'),         #La coma final?
-               ]
-    pie = fields.Selection(selection = TIPO_PIE, string = 'Tipo Pie')
     
     ancho_interior = fields.Integer('Ancho Interior')
     ancho_superficie = fields.Integer('Ancho Superficie')
@@ -57,6 +41,7 @@ class ProductReferencia(models.Model):
     #calculados
     peso_metro = fields.Float('Peso Metro', digits = (10,4), readonly = True, compute = "_get_peso_metro")
     metros_unidad = fields.Float('Metros Unidad', digits = (10,4), readonly = True, compute = "_get_valores_referencia")
+    se_fabrica = fields.Boolean('Se Fabrica', readonly = True, compute = "_get_valores_referencia")
     j_gram = fields.Integer('J Gram', readonly = True, compute = "_get_valores_referencia")
     j_interior = fields.Integer('J Interior', readonly = True, compute = "_get_valores_referencia")
     j_superficie = fields.Integer('J Superficie', readonly = True, compute = "_get_valores_referencia")
@@ -66,7 +51,6 @@ class ProductReferencia(models.Model):
     def _get_peso_metro(self):
     
         for record in self:
-        
             peso1 = 0
 
             #Varios
@@ -229,6 +213,7 @@ class ProductReferencia(models.Model):
     def _get_valores_referencia(self):
     
         for record in self:
+            se_fabrica = True
             metros = 0
             gram = 0
             interior = 0
@@ -236,9 +221,11 @@ class ProductReferencia(models.Model):
 
             #Varios
             if record.type_id.is_varios == True:
-                metros = record.metros_unidad_user
+                se_fabrica = False
+		metros = record.metros_unidad_user
             #Cantonera
             elif record.type_id.is_cantonera == True:
+		se_fabrica = True
                 metros = record.longitud / 1000
                 gram = int((record.grosor * 1000 / 1.4 - 300) / 50) * 50
                 interior = int(record.ala_1 + record.ala_2 - record.grosor * 2 - 1)
@@ -247,6 +234,7 @@ class ProductReferencia(models.Model):
                     superficie = 280
             #Perfil U
             elif record.type_id.is_perfilu == True:
+		se_fabrica = False
                 metros = record.longitud / 1000
                 gram = int((record.grosor * 1000 / 1.4 - 300) / 50) * 50
                 interior = int(record.ala_1 + record.ancho + record.ala_2 - 1)
@@ -255,6 +243,7 @@ class ProductReferencia(models.Model):
                     superficie = 280
             #Slip Sheets
             elif record.type_id.is_slipsheet == True:
+		se_fabrica = True
                 sumaAncho = record.ancho
                 if record.ala_1 > 0:
                     sumaAncho = sumaAncho + record.ala_1
@@ -274,25 +263,30 @@ class ProductReferencia(models.Model):
                     interior = interior + record.ala_2
             #Solid Board
             elif record.type_id.is_solidboard == True:
+		se_fabrica = True
                 metros = record.ancho * record.longitud / 1000000
                 gram = int((record.grosor * 1000 / 1.4 - 300) / 50) * 50
                 interior = record.ancho + 30
             #Formato
             elif record.type_id.is_formato == True:
+		se_fabrica = False
                 metros = record.ancho * record.longitud / 1000000
                 gram = record.gramaje
                 interior = record.ancho
             #Bobina
             elif record.type_id.is_bobina == True:
+		se_fabrica = False
                 metros = (record.diametro * record.diametro - 10000) * 0.61 / record.gramaje
                 gram = record.gramaje
                 interior = record.ancho
                 
             #Pie de Pallet
             elif record.type_id.is_pieballet == True:
+		se_fabrica = False
                 metros = record.longitud / 1000
         
-        
+	
+            record.se_fabrica = se_fabrica
             record.metros_unidad = metros
             record.j_gram = gram
             record.j_interior = interior
